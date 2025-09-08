@@ -6,6 +6,15 @@ export interface User {
   avatar?: string
   isAdmin?: boolean
   joinedAt: string
+  stats?: UserStats
+}
+
+export interface UserStats {
+  modulesCompleted: number
+  totalComments: number
+  totalDownloads: number
+  overallProgress: number
+  lastActivity: string
 }
 
 export interface Module {
@@ -29,6 +38,7 @@ export interface Comment {
 
 export const AUTH_STORAGE_KEY = "stl_club_user"
 export const MODULES_STORAGE_KEY = "stl_club_modules"
+export const USER_STATS_KEY = "stl_club_user_stats"
 export const ADMIN_EMAIL = "admin@clubestl.com"
 
 export function saveUser(user: User): void {
@@ -331,5 +341,109 @@ export function clearOldLocalData(): void {
     console.log("Dados antigos do localStorage limpos - módulos serão recarregados")
   } catch (error) {
     console.error("Erro ao limpar dados antigos:", error)
+  }
+}
+
+// ===== SISTEMA DE ESTATÍSTICAS DO USUÁRIO =====
+
+export function getUserStats(): UserStats {
+  if (typeof window === "undefined") {
+    return {
+      modulesCompleted: 0,
+      totalComments: 0,
+      totalDownloads: 0,
+      overallProgress: 0,
+      lastActivity: new Date().toISOString()
+    }
+  }
+
+  try {
+    const stored = localStorage.getItem(USER_STATS_KEY)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch (error) {
+    console.error("Erro ao ler estatísticas do localStorage:", error)
+  }
+
+  // Retornar estatísticas padrão se não existirem
+  return {
+    modulesCompleted: 0,
+    totalComments: 0,
+    totalDownloads: 0,
+    overallProgress: 0,
+    lastActivity: new Date().toISOString()
+  }
+}
+
+export function saveUserStats(stats: UserStats): void {
+  if (typeof window === "undefined") return
+  
+  try {
+    const updatedStats = {
+      ...stats,
+      lastActivity: new Date().toISOString()
+    }
+    localStorage.setItem(USER_STATS_KEY, JSON.stringify(updatedStats))
+  } catch (error) {
+    console.error("Erro ao salvar estatísticas:", error)
+  }
+}
+
+export function incrementDownloads(): void {
+  const stats = getUserStats()
+  stats.totalDownloads += 1
+  saveUserStats(stats)
+}
+
+export function incrementComments(): void {
+  const stats = getUserStats()
+  stats.totalComments += 1
+  saveUserStats(stats)
+}
+
+export function updateModuleProgress(moduleId: string, progress: number): void {
+  const stats = getUserStats()
+  
+  // Calcular módulos concluídos baseado no progresso
+  const modules = getModules()
+  const completedModules = modules.filter(m => {
+    // Simular progresso baseado no ID do módulo para demonstração
+    // Em um sistema real, isso viria do banco de dados
+    return m.id === moduleId ? progress >= 100 : false
+  }).length
+  
+  stats.modulesCompleted = completedModules
+  stats.overallProgress = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0
+  
+  saveUserStats(stats)
+}
+
+export function markModuleAsCompleted(moduleId: string): void {
+  const stats = getUserStats()
+  const modules = getModules()
+  
+  // Simular que o módulo foi concluído
+  stats.modulesCompleted = Math.min(stats.modulesCompleted + 1, modules.length)
+  stats.overallProgress = modules.length > 0 ? Math.round((stats.modulesCompleted / modules.length) * 100) : 0
+  
+  saveUserStats(stats)
+}
+
+export function calculateRealStats(): UserStats {
+  const modules = getModules()
+  const stats = getUserStats()
+  
+  // Calcular estatísticas baseadas nos módulos disponíveis
+  const totalModules = modules.length
+  const completedModules = Math.min(stats.modulesCompleted, totalModules)
+  const progressPercentage = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+  
+  return {
+    modulesCompleted: completedModules,
+    totalComments: stats.totalComments,
+    totalDownloads: stats.totalDownloads,
+    overallProgress: progressPercentage,
+    lastActivity: stats.lastActivity
   }
 }

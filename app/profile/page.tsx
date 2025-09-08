@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useAuth } from "@/contexts/auth-context"
-import { saveUser, type User } from "@/lib/auth"
+import { saveUser, type User, calculateRealStats } from "@/lib/auth"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,6 +26,9 @@ export default function ProfilePage() {
   })
   const [avatar, setAvatar] = useState(user?.avatar || "")
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Calcular estatísticas reais do usuário
+  const userStats = calculateRealStats()
 
   if (!user) {
     router.push("/login")
@@ -266,19 +269,19 @@ export default function ProfilePage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-[var(--color-stl-neon-red)]">7</div>
+                  <div className="text-2xl font-bold text-[var(--color-stl-neon-red)]">{userStats.modulesCompleted}</div>
                   <div className="text-xs text-gray-400">Módulos Concluídos</div>
                 </div>
                 <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-[var(--color-stl-cyan)]">15</div>
+                  <div className="text-2xl font-bold text-[var(--color-stl-cyan)]">{userStats.totalComments}</div>
                   <div className="text-xs text-gray-400">Comentários</div>
                 </div>
                 <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-[var(--color-stl-yellow)]">42</div>
+                  <div className="text-2xl font-bold text-[var(--color-stl-yellow)]">{userStats.totalDownloads}</div>
                   <div className="text-xs text-gray-400">Downloads</div>
                 </div>
                 <div className="text-center p-3 bg-gray-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-400">85%</div>
+                  <div className="text-2xl font-bold text-green-400">{userStats.overallProgress}%</div>
                   <div className="text-xs text-gray-400">Progresso</div>
                 </div>
               </div>
