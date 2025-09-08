@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Camera, Save, UserIcon, Mail, Phone, Calendar } from "lucide-react"
 import Link from "next/link"
+import { Sidebar } from "@/components/sidebar"
+import { getModules } from "@/lib/auth"
 
 export default function ProfilePage() {
   const { user, login } = useAuth()
@@ -26,9 +28,14 @@ export default function ProfilePage() {
   })
   const [avatar, setAvatar] = useState(user?.avatar || "")
   const [isLoading, setIsLoading] = useState(false)
+  const [modules, setModules] = useState<any[]>([])
   
   // Calcular estatísticas reais do usuário
   const userStats = calculateRealStats()
+
+  useEffect(() => {
+    setModules(getModules())
+  }, [])
 
   if (!user) {
     router.push("/login")
@@ -98,25 +105,27 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="text-[var(--color-stl-cyan)]">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-white">Meu Perfil</h1>
-              <p className="text-sm text-gray-400">Gerencie suas informações pessoais</p>
+    <div className="min-h-screen bg-black flex">
+      <Sidebar modules={modules} userProgress={[]} />
+      <div className="flex-1">
+        {/* Header */}
+        <header className="border-b border-gray-800 bg-gray-900/50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="icon" className="text-[var(--color-stl-cyan)]">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold text-white">Meu Perfil</h1>
+                <p className="text-sm text-gray-400">Gerencie suas informações pessoais</p>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Card de Avatar e Info Básica */}
           <Card className="bg-gray-900/50 border-[var(--color-stl-yellow)] neon-border">
@@ -287,6 +296,7 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>

@@ -294,7 +294,12 @@ export default function ModulePage() {
 
                   {!isCompleted && (
                     <Button
-                      onClick={handleMarkAsViewed}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log("Botão clicado - evento capturado")
+                        handleMarkAsViewed()
+                      }}
                       className="w-full bg-red-600 hover:bg-red-600/80 text-white font-semibold"
                     >
                       <Eye className="h-4 w-4 mr-2" />

@@ -5,6 +5,7 @@ import { getModules } from "@/lib/auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import BackToDashboard from "@/components/back-to-dashboard"
+import { Sidebar } from "@/components/sidebar"
 
 export default function ProgressPage() {
   const [modules, setModules] = useState<any[]>([])
@@ -15,8 +16,10 @@ export default function ProgressPage() {
   const total = modules.length
   const pct = total ? Math.round((completed / total) * 100) : 0
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black text-white flex">
+      <Sidebar modules={modules} userProgress={[]} />
+      <div className="flex-1">
+        <div className="container mx-auto px-4 py-8">
         <div className="mb-4"><BackToDashboard /></div>
         <h1 className="text-2xl font-bold text-yellow-400 mb-4">Meu Progresso</h1>
         <Card className="bg-gray-900/60 border-gray-700 mb-6">
@@ -39,6 +42,7 @@ export default function ProgressPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
         </div>
       </div>
     </div>
