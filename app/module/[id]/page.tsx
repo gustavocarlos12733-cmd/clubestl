@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { getModules, markModuleCompleted, addLocalComment } from "@/lib/auth"
+import { getModules, markModuleCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -120,7 +120,7 @@ export default function ModulePage() {
       }
 
       // Marcar módulo como concluído nas estatísticas
-      markModuleAsCompleted(module.id)
+      markModuleCompleted(module.id)
       
       console.log("Módulo marcado como visto com sucesso!")
       
@@ -132,7 +132,6 @@ export default function ModulePage() {
       
       // Fallback local
       markModuleCompleted(module.id)
-      markModuleAsCompleted(module.id) // Também atualizar estatísticas no fallback
       setUserProgress({ completed: true, completed_at: new Date().toISOString() })
       
       console.log("Fallback executado com sucesso!")
@@ -247,7 +246,7 @@ export default function ModulePage() {
 
   return (
     <div className="min-h-screen bg-black flex">
-      <Sidebar />
+      <Sidebar modules={[]} userProgress={[]} />
       <div className="flex-1">
         <HeaderBar />
         <div className="border-b border-gray-800 bg-gray-900/50">
