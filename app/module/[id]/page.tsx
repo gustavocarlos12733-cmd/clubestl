@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, CheckCircle, MessageCircle, Download, Eye, FileText, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { HeaderBar } from "@/components/header-bar"
+import { Sidebar } from "@/components/sidebar"
 
 export default function ModulePage() {
   const params = useParams()
@@ -91,8 +92,13 @@ export default function ModulePage() {
   }
 
   const handleMarkAsViewed = async () => {
-    if (!module || !user) return
+    console.log("Botão clicado - handleMarkAsViewed chamado")
+    if (!module || !user) {
+      console.log("Erro: module ou user não encontrado", { module, user })
+      return
+    }
 
+    console.log("Iniciando processo de marcar como visto...")
     try {
       if (userProgress) {
         // Atualizar progresso existente
@@ -113,13 +119,23 @@ export default function ModulePage() {
         })
       }
 
+      // Marcar módulo como concluído nas estatísticas
+      markModuleAsCompleted(module.id)
+      
+      console.log("Módulo marcado como visto com sucesso!")
+      
       // Recarregar dados
       loadModuleData()
     } catch (error) {
       console.error("Erro ao marcar como visto:", error)
+      console.log("Usando fallback local...")
+      
       // Fallback local
       markModuleCompleted(module.id)
+      markModuleAsCompleted(module.id) // Também atualizar estatísticas no fallback
       setUserProgress({ completed: true, completed_at: new Date().toISOString() })
+      
+      console.log("Fallback executado com sucesso!")
     }
   }
 
@@ -230,21 +246,23 @@ export default function ModulePage() {
   const drive = driveLinks[String(params.id)]
 
   return (
-    <div className="min-h-screen bg-black">
-      <HeaderBar />
-      <div className="border-b border-gray-800 bg-gray-900/50">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm" className="border-[var(--border)] text-gray-300 bg-transparent hover:bg-gray-800">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-            </Button>
-          </Link>
-          <h1 className="text-lg font-semibold text-white">{module.title}</h1>
-          <span className="text-xs text-gray-400">{module.category}</span>
+    <div className="min-h-screen bg-black flex">
+      <Sidebar />
+      <div className="flex-1">
+        <HeaderBar />
+        <div className="border-b border-gray-800 bg-gray-900/50">
+          <div className="container mx-auto px-4 py-3 flex items-center gap-3">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm" className="border-[var(--border)] text-gray-300 bg-transparent hover:bg-gray-800">
+                <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+              </Button>
+            </Link>
+            <h1 className="text-lg font-semibold text-white">{module.title}</h1>
+            <span className="text-xs text-gray-400">{module.category}</span>
+          </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Conteúdo Principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -432,6 +450,7 @@ export default function ModulePage() {
               </CardContent>
             </Card>
           </div>
+        </div>
         </div>
       </div>
     </div>
