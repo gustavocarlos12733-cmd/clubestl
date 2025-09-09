@@ -24,6 +24,7 @@ import Link from "next/link"
 import { Sidebar } from "@/components/sidebar"
 import { useAuth } from "@/contexts/auth-context"
 import { getModules, clearOldLocalData } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/client"
 import { HeaderBar } from "@/components/header-bar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("all")
   const [loading, setLoading] = useState(true)
+  const supabase = createClient()
 
   useEffect(() => {
     // Limpar dados antigos do localStorage para garantir que todos vejam as atualizações
@@ -52,6 +54,23 @@ export default function DashboardPage() {
     setModules(loadedModules)
     setLoading(false)
   }, [])
+
+  useEffect(() => {
+    const syncUserProgress = async () => {
+      try {
+        if (!user) return
+        const { data } = await supabase
+          .from("user_progress")
+          .select("module_id, completed")
+          .eq("user_id", user.id)
+        const completedIds = new Set((data || []).filter((p: any) => p.completed).map((p: any) => p.module_id))
+        setModules((prev) => prev.map((m) => (completedIds.has(m.id) ? { ...m, isCompleted: true, progress: 100 } : m)))
+      } catch (e) {
+        console.error("Erro ao sincronizar progresso do usuário:", e)
+      }
+    }
+    syncUserProgress()
+  }, [user, supabase])
 
   if (loading) {
     return (

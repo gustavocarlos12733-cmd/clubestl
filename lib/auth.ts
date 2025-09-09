@@ -385,6 +385,10 @@ export function saveUserStats(stats: UserStats): void {
       lastActivity: new Date().toISOString()
     }
     localStorage.setItem(USER_STATS_KEY, JSON.stringify(updatedStats))
+    try {
+      // Notificar ouvintes na UI para reagirem à mudança de estatísticas
+      window.dispatchEvent(new CustomEvent("user-stats-changed"))
+    } catch {}
   } catch (error) {
     console.error("Erro ao salvar estatísticas:", error)
   }
