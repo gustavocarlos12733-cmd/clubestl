@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { getModules, markModuleCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
+import { getModules, markModuleAsCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -57,13 +57,13 @@ export default function ModulePage() {
         moduleData = local ? { ...local, files: [] } : null
       }
 
-      // Carregar progresso do usuário para este módulo
+      // Carregar progresso do usuário para este módulo (tolerante a ausência de registro)
       const { data: progressData } = await supabase
         .from("user_progress")
         .select("*")
         .eq("user_id", authUser.id)
         .eq("module_id", params.id)
-        .single()
+        .maybeSingle()
 
       // Carregar comentários do módulo
       const { data: commentsData } = await supabase
@@ -119,19 +119,20 @@ export default function ModulePage() {
         })
       }
 
-      // Marcar módulo como concluído nas estatísticas
-      markModuleCompleted(module.id)
+      // Atualização otimista de UI e estatísticas
+      setUserProgress({ completed: true, completed_at: new Date().toISOString() })
+      markModuleAsCompleted(module.id)
       
       console.log("Módulo marcado como visto com sucesso!")
       
-      // Recarregar dados
-      loadModuleData()
+      // Recarregar dados em segundo plano
+      void loadModuleData()
     } catch (error) {
       console.error("Erro ao marcar como visto:", error)
       console.log("Usando fallback local...")
       
       // Fallback local
-      markModuleCompleted(module.id)
+      markModuleAsCompleted(module.id)
       setUserProgress({ completed: true, completed_at: new Date().toISOString() })
       
       console.log("Fallback executado com sucesso!")
@@ -149,9 +150,17 @@ export default function ModulePage() {
         module_id: module.id,
         content: comment.trim(),
       })
-
+      // Atualização otimista e estatísticas
+      const optimistic = {
+        id: `${Date.now()}`,
+        content: comment.trim(),
+        created_at: new Date().toISOString(),
+        profiles: { name: user.name ?? user.email ?? "Usuário" },
+      } as any
+      setComments((prev) => [optimistic, ...prev])
       setComment("")
-      loadModuleData() // Recarregar comentários
+      incrementComments()
+      void loadModuleData() // Recarregar comentários
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error)
       // Fallback local persistente
@@ -289,7 +298,7 @@ export default function ModulePage() {
                       <span className="text-sm text-gray-400">Progresso</span>
                       <span className="text-sm text-cyan-400">{isCompleted ? 100 : 0}%</span>
                     </div>
-                    <Progress value={isCompleted ? 100 : 0} className="h-2" />
+                    <Progress value={isCompleted ? 100 : 0} className="h-2" indicatorClassName={isCompleted ? "bg-green-500" : undefined} />
                   </div>
 
                   {!isCompleted && (
@@ -333,6 +342,7 @@ export default function ModulePage() {
                           <Button
                             key={index}
                             variant="outline"
+                            onClick={() => incrementDownloads()}
                             className="justify-start border-cyan-400 text-cyan-400 bg-transparent hover:bg-cyan-400/10"
                           >
                             <Download className="h-4 w-4 mr-2" />
@@ -349,7 +359,7 @@ export default function ModulePage() {
                           <div className="mt-4">
                             <p className="text-sm text-gray-300 mb-2">{drive.desc}</p>
                             <a href={drive.href} target="_blank" rel="noreferrer">
-                              <Button className="bg-[var(--brand-accent)] hover:opacity-90 text-black">
+                              <Button onClick={() => incrementDownloads()} className="bg-[var(--brand-accent)] hover:opacity-90 text-black">
                                 Abrir no Google Drive
                                 <ExternalLink className="h-4 w-4 ml-2" />
                               </Button>
