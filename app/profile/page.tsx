@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useAuth } from "@/contexts/auth-context"
 import { saveUser, type User, calculateRealStats } from "@/lib/auth"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
