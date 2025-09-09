@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { getModules, markModuleCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
+import { getModules, markModuleAsCompleted, incrementDownloads, incrementComments } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -100,6 +100,9 @@ export default function ModulePage() {
 
     console.log("Iniciando processo de marcar como visto...")
     try {
+      // Atualização otimista do estado local
+      setUserProgress({ ...(userProgress || {}), completed: true, completed_at: new Date().toISOString() })
+
       if (userProgress) {
         // Atualizar progresso existente
         await supabase
@@ -119,20 +122,20 @@ export default function ModulePage() {
         })
       }
 
-      // Marcar módulo como concluído nas estatísticas
-      markModuleCompleted(module.id)
+      // Atualizar estatísticas locais do usuário
+      markModuleAsCompleted(module.id)
       
       console.log("Módulo marcado como visto com sucesso!")
       
-      // Recarregar dados
+      // Opcionalmente, reconciliar dados com o servidor
       loadModuleData()
     } catch (error) {
       console.error("Erro ao marcar como visto:", error)
       console.log("Usando fallback local...")
       
       // Fallback local
-      markModuleCompleted(module.id)
-      setUserProgress({ completed: true, completed_at: new Date().toISOString() })
+      markModuleAsCompleted(module.id)
+      setUserProgress({ ...(userProgress || {}), completed: true, completed_at: new Date().toISOString() })
       
       console.log("Fallback executado com sucesso!")
     }
@@ -143,34 +146,28 @@ export default function ModulePage() {
 
     setIsSubmittingComment(true)
 
+    const content = comment.trim()
+    const optimistic = {
+      id: `${Date.now()}`,
+      content,
+      created_at: new Date().toISOString(),
+      profiles: { name: user.name ?? user.email ?? "Usuário" },
+    }
+    setComments([optimistic, ...comments])
+    setComment("")
+
     try {
       await supabase.from("comments").insert({
         user_id: user.id,
         module_id: module.id,
-        content: comment.trim(),
+        content,
       })
-
-      setComment("")
-      loadModuleData() // Recarregar comentários
+      // Atualizar estatísticas locais
+      incrementComments()
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error)
-      // Fallback local persistente
-      addLocalComment(module.id, {
-        userId: user.id,
-        userName: user.name ?? user.email ?? "Usuário",
-        content: comment.trim(),
-        createdAt: new Date().toISOString(),
-      })
-      setComments([
-        {
-          id: `${Date.now()}`,
-          content: comment.trim(),
-          created_at: new Date().toISOString(),
-          profiles: { name: user.name ?? user.email ?? "Usuário" },
-        },
-        ...comments,
-      ])
-      setComment("")
+      // Mesmo em erro, manter comentário otimista e atualizar estatísticas locais
+      incrementComments()
     } finally {
       setIsSubmittingComment(false)
     }
@@ -349,7 +346,12 @@ export default function ModulePage() {
                           <div className="mt-4">
                             <p className="text-sm text-gray-300 mb-2">{drive.desc}</p>
                             <a href={drive.href} target="_blank" rel="noreferrer">
-                              <Button className="bg-[var(--brand-accent)] hover:opacity-90 text-black">
+                              <Button
+                                onClick={() => {
+                                  try { incrementDownloads() } catch (e) { console.error(e) }
+                                }}
+                                className="bg-[var(--brand-accent)] hover:opacity-90 text-black"
+                              >
                                 Abrir no Google Drive
                                 <ExternalLink className="h-4 w-4 ml-2" />
                               </Button>

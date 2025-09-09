@@ -29,12 +29,23 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState(user?.avatar || "")
   const [isLoading, setIsLoading] = useState(false)
   const [modules, setModules] = useState<any[]>([])
-  
-  // Calcular estatísticas reais do usuário
-  const userStats = calculateRealStats()
+  const [userStats, setUserStats] = useState(calculateRealStats())
 
   useEffect(() => {
     setModules(getModules())
+  }, [])
+
+  useEffect(() => {
+    const updateStats = () => setUserStats(calculateRealStats())
+    updateStats()
+    if (typeof window !== "undefined") {
+      window.addEventListener("user-stats-changed", updateStats)
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("user-stats-changed", updateStats)
+      }
+    }
   }, [])
 
   if (!user) {
