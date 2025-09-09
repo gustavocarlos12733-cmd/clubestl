@@ -39,6 +39,7 @@ export interface Comment {
 export const AUTH_STORAGE_KEY = "stl_club_user"
 export const MODULES_STORAGE_KEY = "stl_club_modules"
 export const USER_STATS_KEY = "stl_club_user_stats"
+export const USER_PROGRESS_KEY = "stl_club_user_progress_map"
 export const ADMIN_EMAIL = "admin@clubestl.com"
 
 export function saveUser(user: User): void {
@@ -302,14 +303,19 @@ Explore a espiritualidade através da arte 3D!`,
 ]
 
 export function getModules(): Module[] {
-  // Sempre retornar os módulos atualizados do servidor
-  // Removendo dependência do localStorage para garantir que todos vejam as atualizações
-  return initialModules.map((module) => ({
-    ...module,
-    isCompleted: false,
-    progress: 0,
-    comments: [],
-  }))
+  // Carregar progresso local por módulo para refletir conclusão do usuário
+  const progressMap = getLocalProgressMap()
+
+  return initialModules.map((module) => {
+    const local = progressMap[module.id]
+    const isCompleted = Boolean(local?.completed)
+    return {
+      ...module,
+      isCompleted,
+      progress: isCompleted ? 100 : 0,
+      comments: [],
+    }
+  })
 }
 
 export function updateModule(moduleId: string, updates: Partial<Module>): void {
@@ -390,6 +396,37 @@ export function saveUserStats(stats: UserStats): void {
   }
 }
 
+// ===== Progresso Local por Módulo =====
+export function getLocalProgressMap(): Record<string, { completed: boolean; completedAt?: string }> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = localStorage.getItem(USER_PROGRESS_KEY)
+    return raw ? (JSON.parse(raw) as Record<string, { completed: boolean; completedAt?: string }>) : {}
+  } catch (error) {
+    console.error("Erro ao ler progresso local:", error)
+    return {}
+  }
+}
+
+export function setLocalProgressMap(map: Record<string, { completed: boolean; completedAt?: string }>): void {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(USER_PROGRESS_KEY, JSON.stringify(map))
+  } catch (error) {
+    console.error("Erro ao salvar progresso local:", error)
+  }
+}
+
+export function markModuleProgressLocal(moduleId: string, completed: boolean): void {
+  const map = getLocalProgressMap()
+  map[moduleId] = { completed, completedAt: completed ? new Date().toISOString() : undefined }
+  setLocalProgressMap(map)
+}
+
+export function isModuleCompleted(moduleId: string): boolean {
+  return Boolean(getLocalProgressMap()[moduleId]?.completed)
+}
+
 export function incrementDownloads(): void {
   const stats = getUserStats()
   stats.totalDownloads += 1
@@ -406,12 +443,11 @@ export function updateModuleProgress(moduleId: string, progress: number): void {
   const stats = getUserStats()
   
   // Calcular módulos concluídos baseado no progresso
+  if (progress >= 100) {
+    markModuleProgressLocal(moduleId, true)
+  }
   const modules = getModules()
-  const completedModules = modules.filter(m => {
-    // Simular progresso baseado no ID do módulo para demonstração
-    // Em um sistema real, isso viria do banco de dados
-    return m.id === moduleId ? progress >= 100 : false
-  }).length
+  const completedModules = modules.filter(m => m.isCompleted).length
   
   stats.modulesCompleted = completedModules
   stats.overallProgress = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0
@@ -420,25 +456,25 @@ export function updateModuleProgress(moduleId: string, progress: number): void {
 }
 
 export function markModuleAsCompleted(moduleId: string): void {
-  const stats = getUserStats()
+  // Marcar localmente como concluído e recalcular estatísticas reais
+  markModuleProgressLocal(moduleId, true)
+
   const modules = getModules()
-  
-  // Simular que o módulo foi concluído
-  stats.modulesCompleted = Math.min(stats.modulesCompleted + 1, modules.length)
-  stats.overallProgress = modules.length > 0 ? Math.round((stats.modulesCompleted / modules.length) * 100) : 0
-  
+  const stats = getUserStats()
+  const completedModules = modules.filter(m => m.isCompleted).length
+  stats.modulesCompleted = completedModules
+  stats.overallProgress = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0
   saveUserStats(stats)
 }
 
 export function calculateRealStats(): UserStats {
   const modules = getModules()
   const stats = getUserStats()
-  
-  // Calcular estatísticas baseadas nos módulos disponíveis
-  const totalModules = modules.length
-  const completedModules = Math.min(stats.modulesCompleted, totalModules)
-  const progressPercentage = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
-  
+
+  // Recalcular módulos concluídos a partir do progresso local por módulo
+  const completedModules = modules.filter(m => m.isCompleted).length
+  const progressPercentage = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0
+
   return {
     modulesCompleted: completedModules,
     totalComments: stats.totalComments,

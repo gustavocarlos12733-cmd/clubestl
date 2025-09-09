@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { getModules, markModuleAsCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
+import { getModules, markModuleAsCompleted, addLocalComment, incrementDownloads, incrementComments, isModuleCompleted, markModuleProgressLocal } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -82,7 +82,9 @@ export default function ModulePage() {
       }
       setUser(profile ?? fallbackUser)
       setModule(moduleData)
-      setUserProgress(progressData)
+      // Misturar com fallback local para garantir persistência visual
+      const completedLocal = isModuleCompleted(String(params.id))
+      setUserProgress(progressData ? { ...progressData, completed: progressData.completed || completedLocal } : completedLocal ? { completed: true, completed_at: new Date().toISOString() } as any : null)
       setComments(commentsData || [])
     } catch (error) {
       console.error("Erro ao carregar dados do módulo:", error)
@@ -121,6 +123,7 @@ export default function ModulePage() {
 
       // Atualização otimista de UI e estatísticas
       setUserProgress({ completed: true, completed_at: new Date().toISOString() })
+      markModuleProgressLocal(module.id, true)
       markModuleAsCompleted(module.id)
       
       console.log("Módulo marcado como visto com sucesso!")
@@ -132,6 +135,7 @@ export default function ModulePage() {
       console.log("Usando fallback local...")
       
       // Fallback local
+      markModuleProgressLocal(module.id, true)
       markModuleAsCompleted(module.id)
       setUserProgress({ completed: true, completed_at: new Date().toISOString() })
       
