@@ -327,9 +327,26 @@ export function addLocalComment(
   moduleId: string,
   comment: Omit<Comment, "id"> & { id?: string }
 ): void {
-  // Esta função agora é apenas para compatibilidade
-  // Os comentários reais devem ser gerenciados pelo Supabase
-  console.log(`addLocalComment chamado para ${moduleId}:`, comment)
+  // Salvar comentário local no localStorage para persistência
+  if (typeof window === "undefined") return
+  
+  try {
+    const localCommentsKey = `local_comments_${moduleId}`
+    const existingLocalComments = JSON.parse(localStorage.getItem(localCommentsKey) || '[]')
+    
+    const newComment = {
+      id: comment.id || `local_${Date.now()}`,
+      ...comment,
+      created_at: comment.createdAt || new Date().toISOString(),
+    }
+    
+    existingLocalComments.push(newComment)
+    localStorage.setItem(localCommentsKey, JSON.stringify(existingLocalComments))
+    
+    console.log(`Comentário local salvo para ${moduleId}:`, newComment)
+  } catch (error) {
+    console.error("Erro ao salvar comentário local:", error)
+  }
 }
 
 // Função para limpar dados antigos do localStorage
@@ -341,6 +358,31 @@ export function clearOldLocalData(): void {
     console.log("Dados antigos do localStorage limpos - módulos serão recarregados")
   } catch (error) {
     console.error("Erro ao limpar dados antigos:", error)
+  }
+}
+
+// Função para limpar comentários locais de um módulo específico
+export function clearLocalComments(moduleId: string): void {
+  if (typeof window === "undefined") return
+  try {
+    const localCommentsKey = `local_comments_${moduleId}`
+    localStorage.removeItem(localCommentsKey)
+    console.log(`Comentários locais limpos para módulo ${moduleId}`)
+  } catch (error) {
+    console.error("Erro ao limpar comentários locais:", error)
+  }
+}
+
+// Função para obter comentários locais de um módulo
+export function getLocalComments(moduleId: string): any[] {
+  if (typeof window === "undefined") return []
+  try {
+    const localCommentsKey = `local_comments_${moduleId}`
+    const stored = localStorage.getItem(localCommentsKey)
+    return stored ? JSON.parse(stored) : []
+  } catch (error) {
+    console.error("Erro ao obter comentários locais:", error)
+    return []
   }
 }
 

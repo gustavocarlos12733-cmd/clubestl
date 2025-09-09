@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { getModules, markModuleCompleted, addLocalComment, incrementDownloads, incrementComments } from "@/lib/auth"
+import { getModules, markModuleCompleted, addLocalComment, incrementDownloads, incrementComments, getLocalComments } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -75,6 +75,14 @@ export default function ModulePage() {
         .eq("module_id", params.id)
         .order("created_at", { ascending: false })
 
+      // Carregar comentários locais salvos no localStorage
+      const localComments = getLocalComments(String(params.id))
+
+      // Combinar comentários do Supabase com comentários locais
+      const allComments = [...(commentsData || []), ...localComments]
+      // Ordenar por data de criação (mais recente primeiro)
+      allComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
       const fallbackUser = {
         id: authUser.id,
         name: (authUser.user_metadata as any)?.name ?? authUser.email ?? "Usuário",
@@ -83,7 +91,7 @@ export default function ModulePage() {
       setUser(profile ?? fallbackUser)
       setModule(moduleData)
       setUserProgress(progressData)
-      setComments(commentsData || [])
+      setComments(allComments)
     } catch (error) {
       console.error("Erro ao carregar dados do módulo:", error)
     } finally {
@@ -151,26 +159,42 @@ export default function ModulePage() {
       })
 
       setComment("")
-      loadModuleData() // Recarregar comentários
+      // Recarregar apenas os comentários, não todos os dados
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select(`
+          *,
+          profiles:user_id (name)
+        `)
+        .eq("module_id", module.id)
+        .order("created_at", { ascending: false })
+      
+      setComments(commentsData || [])
     } catch (error) {
       console.error("Erro ao adicionar comentário:", error)
-      // Fallback local persistente
-      addLocalComment(module.id, {
-        userId: user.id,
-        userName: user.name ?? user.email ?? "Usuário",
+      // Fallback local persistente - adicionar ao estado sem recarregar
+      const newComment = {
+        id: `local_${Date.now()}`,
         content: comment.trim(),
-        createdAt: new Date().toISOString(),
-      })
-      setComments([
-        {
-          id: `${Date.now()}`,
-          content: comment.trim(),
-          created_at: new Date().toISOString(),
-          profiles: { name: user.name ?? user.email ?? "Usuário" },
-        },
-        ...comments,
-      ])
+        created_at: new Date().toISOString(),
+        profiles: { name: user.name ?? user.email ?? "Usuário" },
+        user_id: user.id,
+        module_id: module.id,
+      }
+      
+      // Adicionar ao início da lista (mais recente primeiro)
+      setComments([newComment, ...comments])
       setComment("")
+      
+      // Salvar no localStorage para persistência
+      try {
+        const localCommentsKey = `local_comments_${module.id}`
+        const existingLocalComments = JSON.parse(localStorage.getItem(localCommentsKey) || '[]')
+        existingLocalComments.push(newComment)
+        localStorage.setItem(localCommentsKey, JSON.stringify(existingLocalComments))
+      } catch (storageError) {
+        console.error("Erro ao salvar comentário local:", storageError)
+      }
     } finally {
       setIsSubmittingComment(false)
     }
@@ -372,6 +396,11 @@ export default function ModulePage() {
                   <MessageCircle className="h-5 w-5" />
                   Comentários ({comments.length})
                 </CardTitle>
+                {comments.some(c => c.id?.startsWith('local_')) && (
+                  <p className="text-xs text-blue-400 mt-1">
+                    💡 Comentários marcados como "Local" são salvos no seu navegador
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -396,19 +425,33 @@ export default function ModulePage() {
                   {/* Lista de Comentários */}
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {comments.length > 0 ? (
-                      comments.map((comment) => (
-                        <div key={comment.id} className="p-3 bg-gray-800/50 rounded-lg border border-yellow-400/20">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-white">
-                              {comment.profiles?.name || "Usuário"}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(comment.created_at).toLocaleDateString("pt-BR")}
-                            </span>
+                      comments.map((comment) => {
+                        const isLocalComment = comment.id?.startsWith('local_')
+                        return (
+                          <div key={comment.id} className={`p-3 rounded-lg border ${
+                            isLocalComment 
+                              ? 'bg-blue-900/30 border-blue-400/30' 
+                              : 'bg-gray-800/50 border-yellow-400/20'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-white">
+                                  {comment.profiles?.name || "Usuário"}
+                                </span>
+                                {isLocalComment && (
+                                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                                    Local
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {new Date(comment.created_at).toLocaleDateString("pt-BR")}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-300">{comment.content}</p>
                           </div>
-                          <p className="text-sm text-gray-300">{comment.content}</p>
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <div className="text-center py-8">
                         <MessageCircle className="h-8 w-8 text-gray-600 mx-auto mb-2" />
