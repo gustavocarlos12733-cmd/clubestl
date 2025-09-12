@@ -23,6 +23,7 @@ import {
   Crown,
   Zap,
   Target,
+  Calculator,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -199,6 +200,17 @@ export function Sidebar({ modules, userProgress }: SidebarProps) {
                   Configurações
                 </Button>
               </Link>
+              <a 
+                href="https://como-precificar-seus-ser-67axihe.gamma.site/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={() => setIsOpen(false)}
+              >
+                <Button variant="ghost" className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-800/50">
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Planilha de Precificação
+                </Button>
+              </a>
             </div>
           </div>
 
