@@ -265,6 +265,10 @@ export default function ModulePage() {
       desc: "CLIQUE ABAIXO PARA ACESSAR O CLUBE STL IMPRESSÃO 3D UMBANDA OXALA EXU OGUM OXUM ORIXA OYA",
       href: "https://drive.google.com/drive/folders/1x4ubg_swo3v5J1cPPLI72_5v-sy40X8g?usp=sharing",
     },
+    "stl-marvel-atualizado": {
+      desc: "CLIQUE ABAIXO PARA ACESSAR O CLUBE MARVEL ATUALIZADO",
+      href: "https://drive.google.com/drive/folders/17kKNzGBivF4kfsKoEKb_DtM9E_m7yLJ4?usp=sharing",
+    },
   }
   const drive = driveLinks[String(params.id)]
 

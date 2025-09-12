@@ -299,6 +299,85 @@ MATERIAIS RECOMENDADOS:
 
 Explore a espiritualidade através da arte 3D!`,
   },
+  {
+    id: "stl-marvel-atualizado",
+    title: "MARVEL ATUALIZADO",
+    category: "ARQUIVOS STL",
+    description: "Coleção atualizada de modelos 3D dos heróis e vilões da Marvel",
+    content: `MARVEL ATUALIZADO - Universo Cinematográfico Marvel
+
+A mais completa coleção de modelos 3D dos heróis e personagens do Universo Marvel!
+
+HERÓIS INCLUÍDOS:
+• Homem de Ferro (Mark 1 ao Mark 85)
+• Capitão América (versões clássica e moderna)
+• Thor (Mjolnir e Stormbreaker)
+• Hulk (diferentes versões)
+• Viúva Negra
+• Gavião Arqueiro
+• Homem-Aranha (Tobey, Andrew e Tom)
+• Pantera Negra
+• Doutor Estranho
+• Capitã Marvel
+• Homem-Formiga
+• Vespa
+• Falcão
+• Soldado Invernal
+• Visão
+• Feiticeira Escarlate
+
+VILÕES ÉPICOS:
+• Thanos (com Manopla do Infinito)
+• Loki (versões variadas)
+• Ultron
+• Dormammu
+• Ego
+• Hela
+• Killmonger
+• Mysterio
+• Vulture
+• Shocker
+• Venom
+• Carnage
+
+EQUIPAMENTOS E ACESSÓRIOS:
+• Manopla do Infinito (completa)
+• Mjolnir e Stormbreaker
+• Escudo do Capitão América
+• Arco do Gavião Arqueiro
+• Web-shooters do Homem-Aranha
+• Armaduras do Homem de Ferro
+• Portal do Doutor Estranho
+
+VEÍCULOS E LOCAIS:
+• Quinjet dos Vingadores
+• Helicarrier da S.H.I.E.L.D.
+• Sanctum Sanctorum
+• Wakanda (elementos arquitetônicos)
+• Asgard (elementos decorativos)
+
+ESPECIFICAÇÕES TÉCNICAS:
+• Formato: STL otimizado
+• Resolução: Ultra HD
+• Escalas: 1:12, 1:18, 1:24
+• Compatibilidade: FDM e SLA
+• Suportes incluídos quando necessário
+
+DICAS DE IMPRESSÃO:
+• PLA+ para resistência
+• PETG para flexibilidade
+• Resina para detalhes finos
+• Velocidade: 40-60mm/s
+• Preenchimento: 15-25%
+
+ATUALIZAÇÕES REGULARES:
+• Novos personagens adicionados mensalmente
+• Versões atualizadas dos filmes mais recentes
+• Melhorias de qualidade contínuas
+• Suporte técnico especializado
+
+Transforme sua impressora 3D em uma fábrica de heróis Marvel!`,
+  },
 ]
 
 export function getModules(): Module[] {
